@@ -14,6 +14,10 @@ class FirulaisGuesserApp:
     """Clase principal que maneja la interfaz y lógica del juego y la enciclopedia."""
     
     def __init__(self, root):
+        """
+        Constructor de la aplicación. Inicializa la ventana principal, los bots de IA,
+        el sistema de persistencia de puntajes y carga los recursos gráficos iniciales.
+        """
         self.root = root
         self.root.title("PERROS")
         self.root.geometry("1500x750")
@@ -39,6 +43,11 @@ class FirulaisGuesserApp:
         self.construir_interfaz()
 
     def cargar_puntaje(self):
+        """
+        Carga el historial de puntuación desde un archivo JSON local.
+        Si el archivo no existe o se encuentra corrupto, maneja la excepción de forma
+        segura mediante un bloque try/except para evitar el colapso del programa.
+        """
         if os.path.exists(self.archivo_puntaje):
             try:
                 with open(self.archivo_puntaje, "r") as f:
@@ -47,6 +56,10 @@ class FirulaisGuesserApp:
                 pass
 
     def guardar_puntaje(self):
+        """
+        Guarda de manera persistente las estadísticas actuales de victorias y derrotas
+        en el archivo JSON. Captura cualquier excepción de escritura en el sistema.
+        """
         try:
             with open(self.archivo_puntaje, "w") as f:
                 json.dump(self.puntaje, f)
@@ -54,13 +67,26 @@ class FirulaisGuesserApp:
             print(f"Error al guardar puntuación: {e}")
 
     def actualizar_label_puntaje(self):
+        """
+        Actualiza dinámicamente el componente de texto en la interfaz gráfica
+        para mostrar los puntajes actuales de aciertos y fallos del usuario.
+        """
         texto = f"🏆 Adivinados: {self.puntaje['adivinados']} | ❌ Fallados: {self.puntaje['fallados']}"
         self.label_puntaje.config(text=texto)
 
     def obtener_respuesta_api(self, url):
+        """
+        Realiza una petición HTTP GET de forma segura a la URL proporcionada
+        con un tiempo de espera límite (timeout) de 5 segundos.
+        """
         return requests.get(url, timeout=5)
 
     def construir_interfaz(self):
+        """
+        Define, posiciona y estiliza todos los elementos visuales de la aplicación
+        utilizando Tkinter (marcos, etiquetas, cajas de texto y botones) para las pantallas
+        de menú principal, modo trivia y modo explorador.
+        """
         # MENU
         self.frame_menu = Frame(self.root, width=1500, height=750)
         self.frame_menu.pack(fill=BOTH, expand=True)
@@ -142,26 +168,43 @@ class FirulaisGuesserApp:
         boton_regresar_2 = Button(self.frame_info, text="Volver al Menú", command=self.volver_al_menu, font=("Lucida console", 10), bg="#5C5247", fg="#E1D186")
         boton_regresar_2.pack(pady=5)
 
-    # --- METODOS DE NAVEGACION ---
+    # METODOS DE NAVEGACION 
     def iniciar_juego(self):
+        """
+        Oculta las pantallas irrelevantes, despliega el contenedor de la Trivia
+        y carga la primera pregunta/imagen del juego.
+        """
         self.frame_menu.pack_forget()
         self.frame_info.pack_forget()
         self.frame_juego.pack(fill=BOTH, expand=True)
         self.nueva_foto_juego()
 
     def iniciar_modo_info(self):
+        """
+        Oculta las pantallas irrelevantes, despliega el contenedor de la Enciclopedia
+        y arranca el análisis multimodal automático de la primera imagen.
+        """
         self.frame_menu.pack_forget()
         self.frame_juego.pack_forget()
         self.frame_info.pack(fill=BOTH, expand=True)
         self.nueva_foto_info()
 
     def volver_al_menu(self):
+        """
+        Remueve los contenedores de los modos activos y reestablece la visualización
+        de la interfaz del menú principal.
+        """
         self.frame_juego.pack_forget()
         self.frame_info.pack_forget()
         self.frame_menu.pack(fill=BOTH, expand=True)
 
-    # --- METODOS DE LÓGICA: MODO INFO ---
+    # METODOS DE LÓGICA: MODO INFO
     def nueva_foto_info(self):
+        """
+        Obtiene una imagen de perro aleatoria de la API externa, la procesa localmente
+        y solicita al bot especialista que genere una ficha enciclopédica detallada
+        utilizando visión por computadora.
+        """
         self.label_output_groq_info.config(text="Buscando un perro y analizando su raza... Espera un momento.")
         self.boton_otro_info.config(state=DISABLED)
         self.bot_info.limpiar_historial()
@@ -196,8 +239,12 @@ class FirulaisGuesserApp:
         finally:
             self.boton_otro_info.config(state=NORMAL)
 
-    # --- METODOS DE LÓGICA: MODO JUEGO (QUIZ) ---
+    # METODOS DE LÓGICA: MODO JUEGO
     def pedir_pista(self):
+        """
+        Se comunica con el bot de la trivia para solicitar una pista de contexto
+        sobre el perro actual en pantalla, controlando que la IA no revele el nombre real.
+        """
         self.label_output_groq_juego.config(text="Pensando una pista...")
         self.root.update()
         try:
@@ -207,6 +254,11 @@ class FirulaisGuesserApp:
             self.label_output_groq_juego.config(text=f"Error al conectar con la IA: {e}")
 
     def nueva_foto_juego(self):
+        """
+        Restablece las variables de juego (intentos, botones y estados), descarga
+        un nuevo espécimen canino de la API e inicia un nuevo hilo conversacional con el
+        moderador de la trivia para procesar la nueva imagen.
+        """
         self.intentos = 0
         self.caja_input_usuario.config(state=NORMAL)
         self.boton_enviar.config(state=NORMAL)
@@ -247,6 +299,11 @@ class FirulaisGuesserApp:
         self.caja_input_usuario.delete(0, END)
 
     def enviar_respuesta_a_groq(self):
+        """
+        Recupera la entrada de texto introducida por el usuario, incrementa el número
+        de intentos y envía el texto estructurado a la IA. Evalúa si se retornó el código secreto 
+        de victoria o si se agotaron las oportunidades, actualizando las puntuaciones locales y la UI.
+        """
         respuesta_usuario = self.caja_input_usuario.get()
         
         if not respuesta_usuario.strip():
@@ -303,6 +360,7 @@ class FirulaisGuesserApp:
             self.label_output_groq_juego.config(text=f"{respuesta_limpia}\n\n[Intentos restantes: {intentos_restantes}]")
 
 if __name__ == "__main__":
+    """Punto de entrada inicial del programa. Construye el ciclo principal de la GUI."""
     root = Tk()
     app = FirulaisGuesserApp(root)
     root.mainloop()
