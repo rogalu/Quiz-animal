@@ -57,6 +57,3 @@ class GroqClient:
  
     def limpiar_historial(self):
         self.historial = []
- 
-    def __str__(self):
-        return f"GroqClient | modelo: {self.modelo} | mensajes en historial: {len(self.historial)}"
