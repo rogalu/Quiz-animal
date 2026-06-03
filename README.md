@@ -6,5 +6,6 @@ Importante:  instalar los componentes necesarios y agregar tu llave de acceso pa
    pip install openai pillow requests python-dotenv
 
 2. Crea un archivo nuevo en esta misma carpeta y llámalo exactamente .env
+
 2.1 Ábrelo y pega dentro tu llave de acceso de la siguiente manera:
    GROQ_API_KEY=tu_clave_api_aqui
